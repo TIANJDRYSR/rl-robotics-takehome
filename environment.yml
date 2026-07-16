@@ -10,3 +10,5 @@ dependencies:
       - "gymnasium[mujoco]==1.3.0"
       - "stable-baselines3[extra]==2.9.0"
       - "pytest==8.4.1"
+      - "imageio"
+      - "imageio-ffmpeg"
