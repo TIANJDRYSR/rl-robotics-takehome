@@ -1,0 +1,12 @@
+name: rl-robotics-takehome
+
+channels:
+  - defaults
+
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - "gymnasium[mujoco]==1.3.0"
+      - "stable-baselines3[extra]==2.9.0"
+      - "pytest==8.4.1"
