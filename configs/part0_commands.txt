@@ -3,7 +3,7 @@
 conda env create -f environment.yml
 conda activate rl-robotics-takehome
 
-python scripts/train_part0_sb3.py \
+python scripts/part0/train_sb3.py \
   --run-name ppo_reacher_seed_0 \
   --seed 0 \
   --total-timesteps 500000 \
@@ -12,19 +12,19 @@ python scripts/train_part0_sb3.py \
   --n-eval-episodes 10 \
   --device cpu
 
-python scripts/evaluate_part0.py \
+python scripts/part0/evaluate.py \
   --model checkpoints/part0/ppo_reacher_seed_0/best/best_model.zip \
   --output results/part0/ppo_reacher_seed_0/final_evaluation.json \
   --episodes 50 \
   --seed 20000 \
   --device cpu
 
-python scripts/plot_part0_curve.py \
+python scripts/part0/plot_curve.py \
   --evaluations results/part0/ppo_reacher_seed_0/eval/evaluations.npz \
   --output results/part0/ppo_reacher_seed_0/learning_curve.png \
   --csv-output results/part0/ppo_reacher_seed_0/learning_curve.csv
 
-python scripts/record_part0_video.py \
+python scripts/part0/record_video.py \
   --model checkpoints/part0/ppo_reacher_seed_0/best/best_model.zip \
   --output videos/part0/ppo_reacher_seed_0.mp4 \
   --seed 30000 \

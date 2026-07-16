@@ -67,13 +67,45 @@ def main() -> None:
     finally:
         env.close()
 
-    imageio.mimsave(
-        args.output,
-        frames,
-        fps=args.fps,
-        codec="libx264",
-        macro_block_size=None,
-    )
+    suffix = args.output.suffix.lower()
+
+    if suffix == ".webm":
+        imageio.mimsave(
+            args.output,
+            frames,
+            fps=args.fps,
+            codec="libvpx-vp9",
+            pixelformat="yuv420p",
+            output_params=[
+                "-crf",
+                "30",
+                "-b:v",
+                "0",
+            ],
+            macro_block_size=16,
+        )
+    elif suffix == ".mp4":
+        imageio.mimsave(
+            args.output,
+            frames,
+            fps=args.fps,
+            codec="libx264",
+            pixelformat="yuv420p",
+            output_params=[
+                "-profile:v",
+                "baseline",
+                "-level",
+                "3.0",
+                "-movflags",
+                "+faststart",
+            ],
+            macro_block_size=16,
+        )
+    else:
+        raise ValueError(
+            f"Unsupported video extension: {suffix}. "
+            "Use .webm or .mp4."
+        )
 
     print("=" * 70)
     print(f"Video:         {args.output}")
