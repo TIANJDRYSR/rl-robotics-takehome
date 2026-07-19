@@ -1,0 +1,48 @@
+{
+  "algo": "custom",
+  "model_path": "checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model",
+  "env_id": "NoisyGoalReacher-v0",
+  "env_kwargs": {
+    "goal_radius_min": 0.05,
+    "goal_radius_max": 0.18,
+    "noise_sigma": 0.005,
+    "success_threshold": 0.04,
+    "reward_type": "dense",
+    "success_bonus": 0.0
+  },
+  "deterministic": true,
+  "base_seed": 40000,
+  "episode_seeds": [
+    40000,
+    40001,
+    40002,
+    40003,
+    40004
+  ],
+  "n_episodes": 5,
+  "mean_return": -4.196127619408071,
+  "std_return": 1.6293597205941934,
+  "mean_length": 50.0,
+  "success_rate": 1.0,
+  "episode_returns": [
+    -3.746776684653014,
+    -1.5620231162756681,
+    -6.595600141212344,
+    -4.271418869495392,
+    -4.804819285403937
+  ],
+  "episode_lengths": [
+    50,
+    50,
+    50,
+    50,
+    50
+  ],
+  "episode_successes": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+  ]
+}

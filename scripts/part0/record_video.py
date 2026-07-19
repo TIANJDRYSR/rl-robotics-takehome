@@ -21,6 +21,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--seed", type=int, default=30_000)
     parser.add_argument("--device", type=str, default="cpu")
     parser.add_argument("--fps", type=int, default=50)
+    parser.add_argument(
+        "--episodes",
+        type=int,
+        default=1,
+        help="Number of episodes to record back-to-back into a single video (each reset with seed + episode_index).",
+    )
 
     return parser.parse_args()
 
@@ -39,30 +45,38 @@ def main() -> None:
 
     model = PPO.load(args.model, device=args.device)
 
-    observation, info = env.reset(seed=args.seed)
-    frames = [env.render()]
-
-    terminated = False
-    truncated = False
-    episode_return = 0.0
-    episode_length = 0
+    frames = []
+    episode_returns = []
+    episode_lengths = []
 
     try:
-        while not (terminated or truncated):
-            action, _ = model.predict(
-                observation,
-                deterministic=True,
-            )
+        for episode in range(args.episodes):
+            observation, info = env.reset(seed=args.seed + episode)
+            frames.append(env.render())
 
-            observation, reward, terminated, truncated, info = env.step(
-                action
-            )
+            terminated = False
+            truncated = False
+            episode_return = 0.0
+            episode_length = 0
 
-            frame = env.render()
-            frames.append(frame)
+            while not (terminated or truncated):
+                action, _ = model.predict(
+                    observation,
+                    deterministic=True,
+                )
 
-            episode_return += float(reward)
-            episode_length += 1
+                observation, reward, terminated, truncated, info = env.step(
+                    action
+                )
+
+                frame = env.render()
+                frames.append(frame)
+
+                episode_return += float(reward)
+                episode_length += 1
+
+            episode_returns.append(episode_return)
+            episode_lengths.append(episode_length)
 
     finally:
         env.close()
@@ -108,11 +122,13 @@ def main() -> None:
         )
 
     print("=" * 70)
-    print(f"Video:         {args.output}")
-    print(f"Seed:          {args.seed}")
-    print(f"Episode return:{episode_return:.4f}")
-    print(f"Episode length:{episode_length}")
-    print(f"Frames:        {len(frames)}")
+    print(f"Video:          {args.output}")
+    print(f"Seed:           {args.seed}")
+    print(f"Episodes:       {args.episodes}")
+    for idx, (ep_return, ep_length) in enumerate(zip(episode_returns, episode_lengths)):
+        print(f"  Episode {idx:03d}: return={ep_return:9.4f}, length={ep_length}")
+    print(f"Frames:         {len(frames)}")
+    print(f"Duration (s):   {len(frames) / args.fps:.1f}")
     print("=" * 70)
 
 

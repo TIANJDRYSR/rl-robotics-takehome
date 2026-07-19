@@ -17,9 +17,10 @@ class NoisyGoalReacherEnv(ReacherEnv):
         noise_sigma: float = 0.005,
         success_threshold: float = 0.04,
         reward_type: str = "dense",
+        success_bonus: float = 3.0,
         **kwargs,
     ) -> None:
-        
+
         """Initialize the custom reaching environment."""
         if goal_radius_min < 0.0:
             raise ValueError("goal_radius_min must be non-negative.")
@@ -35,12 +36,15 @@ class NoisyGoalReacherEnv(ReacherEnv):
             raise ValueError(
                 "reward_type must be either 'dense' or 'sparse'."
             )
+        if success_bonus < 0.0:
+            raise ValueError("success_bonus must be non-negative.")
 
         self.goal_radius_min = float(goal_radius_min)
         self.goal_radius_max = float(goal_radius_max)
         self.noise_sigma = float(noise_sigma)
         self.success_threshold = float(success_threshold)
         self.reward_type = reward_type
+        self.success_bonus = float(success_bonus)
 
         super().__init__(**kwargs)
 
@@ -131,19 +135,25 @@ class NoisyGoalReacherEnv(ReacherEnv):
         # get the real fingertip and target positions (without noise)
         vec = self.get_body_com("fingertip") - self.get_body_com("target")
         distance = float(np.linalg.norm(vec))
+        is_success = distance < self.success_threshold
+        reward_success_bonus = 0.0
+
         if self.reward_type == "sparse":
-            reward_dist = -1.0 if distance > self.success_threshold else 0.0
-            reward_ctrl = 0
+            reward_dist = 0.0 if is_success else -1.0
+            reward_ctrl = 0.0
         elif self.reward_type == "dense":
             reward_dist = -distance * self._reward_dist_weight
             reward_ctrl = -np.square(action).sum() * self._reward_control_weight
+            if is_success:
+                reward_success_bonus = self.success_bonus
 
-        reward = reward_dist + reward_ctrl
+        reward = float(reward_dist + reward_ctrl + reward_success_bonus)
 
         reward_info = {
             "distance": distance,
             "reward_dist": reward_dist,
             "reward_ctrl": reward_ctrl,
+            "reward_success_bonus": reward_success_bonus,
         }
 
         return reward, reward_info

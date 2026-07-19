@@ -15,12 +15,8 @@ __pycache__/
 .vscode/
 .idea/
 
-# Experiment outputs
-results/
-checkpoints/
-videos/
-runs/
-logs/
+# Claude Code project config
+.claude/
 
 # System
 .DS_Store

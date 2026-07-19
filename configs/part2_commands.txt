@@ -1,0 +1,249 @@
+# Part 2: Custom PPO (CleanRL-style) vs. Stable-Baselines3 PPO on NoisyGoalReacher-v0
+
+conda env create -f environment.yml
+conda activate rl-robotics-takehome
+
+# ---------------------------------------------------------------------------
+# Train
+# ---------------------------------------------------------------------------
+# Both scripts share the same config (1M timesteps, num_envs=4, num_steps=512,
+# no LR annealing, no value-loss clipping, no obs/reward normalization) so
+# their learning curves are directly comparable. Outputs land under
+# checkpoints/<sb3|custom>/<run_name>/ and results/<sb3|custom>/<run_name>/.
+
+# SB3 PPO baseline.
+python scripts/part2/train_sb3.py \
+  --seed 1
+
+# Custom PPO, dense reward, 3 seeds.
+python scripts/part2/train_custom_ppo.py --seed 1    --reward-type dense
+python scripts/part2/train_custom_ppo.py --seed 12   --reward-type dense
+python scripts/part2/train_custom_ppo.py --seed 1300 --reward-type dense
+
+# Custom PPO, sparse reward, same 3 seeds.
+python scripts/part2/train_custom_ppo.py --seed 1    --reward-type sparse
+python scripts/part2/train_custom_ppo.py --seed 12   --reward-type sparse
+python scripts/part2/train_custom_ppo.py --seed 1300 --reward-type sparse
+
+# Custom PPO, dense reward with the success bonus removed (--success-bonus 0),
+# same 3 seeds. This reproduces the "old" dense reward used in the initial
+# dense-vs-sparse comparison above, now that --success-bonus 3.0 is the
+# default (see "new dense reward" run below).
+python scripts/part2/train_custom_ppo.py --seed 1    --reward-type dense --success-bonus 0
+python scripts/part2/train_custom_ppo.py --seed 12   --reward-type dense --success-bonus 0
+python scripts/part2/train_custom_ppo.py --seed 1300 --reward-type dense --success-bonus 0
+
+# Custom PPO, "new" dense reward (dense + success bonus, --success-bonus 3.0,
+# the default), same 3 seeds. Used in the "dense_n_rew" comparison below
+# (old dense vs. new dense vs. sparse).
+python scripts/part2/train_custom_ppo.py --seed 1    --reward-type dense --success-bonus 3.0
+python scripts/part2/train_custom_ppo.py --seed 12   --reward-type dense --success-bonus 3.0
+python scripts/part2/train_custom_ppo.py --seed 1300 --reward-type dense --success-bonus 3.0
+
+# ---------------------------------------------------------------------------
+# Play back / deterministically evaluate a trained model
+# ---------------------------------------------------------------------------
+# --render-mode human opens a MuJoCo window; use "video" to save MP4s to
+# --video-dir instead (e.g. on a headless/SSH session), or "none" to just
+# print the eval stats.
+
+python scripts/part2/play.py \
+  --algo sb3 \
+  --model-path checkpoints/sb3/NoisyGoalReacher-v0__train_sb3__1__1784446208/best/best_model.zip \
+  --episodes 20 \
+  --render-mode none
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784439909/best/train_custom_ppo.cleanrl_model \
+  --episodes 20 \
+  --render-mode none
+
+# Final comparison: best model from each of the 6 dense/sparse x seed runs,
+# 50 deterministic episodes on a held-out seed (3000, distinct from both
+# training (seed) and periodic eval (seed + 10_000)), results saved as JSON
+# via --output for downstream aggregation/reporting.
+#
+# --reward-type MUST match how the model was trained: it doesn't affect
+# success_rate (that's always distance < success_threshold, independent of
+# reward_type), but it does change what mean_return means -- evaluating a
+# sparse-trained model under play.py's dense default silently produces
+# nonsense mean_return numbers (an early version of this file did exactly
+# that; always pass --reward-type explicitly, don't rely on the default).
+#
+# --success-bonus similarly MUST match how the model was trained (default
+# 0.0 reproduces the checkpoints below, which all predate the arrival-bonus
+# feature; the *_n_rew checkpoints trained with --success-bonus 3.0 need
+# --success-bonus 3.0 passed here too, or mean_return will be inflated by
+# +3.0/step once the arm is within the success threshold -- success_rate is
+# unaffected either way).
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed1.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784439909/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed12.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784441544/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed1300.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1__1784445008/best/train_custom_ppo.cleanrl_model \
+  --reward-type sparse \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/sparse_seed1.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__12__1784444082/best/train_custom_ppo.cleanrl_model \
+  --reward-type sparse \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/sparse_seed12.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1300__1784442481/best/train_custom_ppo.cleanrl_model \
+  --reward-type sparse \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/sparse_seed1300.json
+
+# Sensor-noise sweep: best dense policy (seed 1, highest success rate of the
+# 3 dense seeds) re-evaluated at sigma in {0, 0.005, 0.02}, 50 deterministic
+# episodes each on the same held-out seed 3000. --noise-sigma overrides
+# NoisyGoalReacherEnv's observation-noise stddev independently of what the
+# model was trained with (training used the default 0.005).
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --noise-sigma 0 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed1_noise_sigma_0.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --noise-sigma 0.005 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed1_noise_sigma_0.005.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --noise-sigma 0.02 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_seed1_noise_sigma_0.02.json
+
+# Plot the sigma sweep above: success_rate / mean_return vs. noise_sigma for
+# a single fixed checkpoint (NOT a learning curve -- x-axis is sigma, not
+# environment timesteps). Each --run is "SIGMA:PATH", where PATH is a
+# play.py --output JSON file.
+python scripts/part2/plot_noise_sensitivity.py \
+  --run 0:results/part2/final_eval/dense_seed1_noise_sigma_0.json \
+  --run 0.005:results/part2/final_eval/dense_seed1_noise_sigma_0.005.json \
+  --run 0.02:results/part2/final_eval/dense_seed1_noise_sigma_0.02.json \
+  --title "Dense PPO (seed 1) - sensitivity to observation noise" \
+  --output results/part2/noise_sensitivity_dense_seed1.png
+
+# Rollout video of the best policy (dense, seed 1 -- the same checkpoint used
+# in the sensor-noise sweep above), 5 deterministic episodes recorded as MP4.
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --noise-sigma 0.005 \
+  --episodes 5 \
+  --seed 40000 \
+  --render-mode video \
+  --video-dir videos/part2 \
+  --output results/part2/final_eval/dense_seed1_video_rollout.json
+
+# ---------------------------------------------------------------------------
+# Plot learning curves
+# ---------------------------------------------------------------------------
+# Single Custom PPO run: success_rate / mean_return vs. environment steps.
+python scripts/part2/plot_curve_json.py \
+  --evaluations results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784439909/eval/evaluations.json \
+  --output results/part2/dense_seed12_learning_curve.png \
+  --csv-output results/part2/dense_seed12_learning_curve.csv
+
+# Overlay curves for comparison. Each --run is "ALGO:SEED:PATH" or
+# "ALGO:SEED:REWARD_TYPE:PATH" (repeatable); ALGO is "custom" (JSON eval log)
+# or "sb3" (evaluations.npz from EvalCallback). REWARD_TYPE is a free-form
+# label ("dense"/"sparse") used to color-group runs so two runs that share
+# the same seed (e.g. dense vs. sparse) still get visually distinct lines.
+
+# Dense vs. sparse, same seed - one plot per seed.
+python scripts/part2/plot_comparison.py \
+  --run custom:1:dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784437680/eval/evaluations.json \
+  --run custom:1:sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1__1784445008/eval/evaluations.json \
+  --run custom:1:dense2:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/eval/evaluations.json \
+  --title "NoisyGoalReacher-v0 - seed 1, dense new and old vs. sparse" \
+  --output results/part2/comparison_seed1_dense_old_new_rew_vs_sparse.png
+
+
+# Main report figure: dense-mean vs. sparse-mean success rate across all 3
+# seeds, each shaded by +-1 std across those seeds (not per-episode std).
+# --metric defaults to success_rate since it's the one metric directly
+# comparable between dense/sparse runs (mean_return is not -- different
+# reward scales); pass --metric mean_return or --metric both for the others.
+# Each --group entry is "LABEL:PATH" (repeatable); same LABEL = averaged
+# together. All runs in a group must share identical eval steps (same
+# training config).
+python scripts/part2/plot_reward_type_comparison.py \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784437680/eval/evaluations.json \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784439909/eval/evaluations.json \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784441544/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1__1784445008/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__12__1784444082/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1300__1784442481/eval/evaluations.json \
+  --title "NoisyGoalReacher-v0 - Dense vs. Sparse, success rate (mean over 3 seeds)" \
+  --output results/part2/dense_vs_sparse_mean.png
+
+# For comparing old dense reward, new dense reward (with success bonus), and sparse.
+python scripts/part2/plot_reward_type_comparison.py \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784437680/eval/evaluations.json \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784439909/eval/evaluations.json \
+  --group dense:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784441544/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1__1784445008/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__12__1784444082/eval/evaluations.json \
+  --group sparse:results/custom/NoisyGoalReacher-v0__train_custom_ppo__sparse__1300__1784442481/eval/evaluations.json \
+  --group dense_n_rew:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/eval/evaluations.json \
+  --group dense_n_rew:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784455377/eval/evaluations.json \
+  --group dense_n_rew:results/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/eval/evaluations.json \
+  --title "NoisyGoalReacher-v0 - Dense vs. Sparse, success rate (mean over 3 seeds)" \
+  --output results/part2/dense_old_new_rew_vs_sparse_mean.png

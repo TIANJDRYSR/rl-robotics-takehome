@@ -1,0 +1,12 @@
+# Part 1: NoisyGoalReacher custom environment checks
+
+conda env create -f environment.yml
+conda activate rl-robotics-takehome
+
+# Registers NoisyGoalReacher-v0, resets/steps it for 100 iterations, and
+# asserts every observation stays inside the declared observation space.
+python scripts/part1/check_noisy_goal_reacher.py
+
+# Runs Gymnasium's official env checker (gymnasium.utils.env_checker.check_env)
+# against the unwrapped NoisyGoalReacherEnv (reward_type=dense, noise_sigma=0.005).
+python scripts/part1/check_custom_env.py

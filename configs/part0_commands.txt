@@ -10,14 +10,14 @@ python scripts/part0/train_sb3.py \
   --n-envs 4 \
   --eval-freq 10000 \
   --n-eval-episodes 10 \
-  --device cpu
+  --device cuda
 
 python scripts/part0/evaluate.py \
   --model checkpoints/part0/ppo_reacher_seed_0/best/best_model.zip \
   --output results/part0/ppo_reacher_seed_0/final_evaluation.json \
   --episodes 50 \
   --seed 20000 \
-  --device cpu
+  --device cuda
 
 python scripts/part0/plot_curve.py \
   --evaluations results/part0/ppo_reacher_seed_0/eval/evaluations.npz \
