@@ -7,7 +7,7 @@ baseline, plus reward and robustness studies.
 The full write-up (environment design, algorithm, experiments, failure modes, future work) is in
 the report:
 
-- **`rl_robotics_report.pdf`** — full report (English)
+- **`rl_robotics_report_TIANYUXIN.pdf`** — full report (English)
 
 ---
 
@@ -42,7 +42,7 @@ conda activate rl-robotics-takehome
 ├── pyproject.toml                      # src-layout package definition
 ├── environment.yml                     # core dependencies
 ├── environment-lock.yml                # full pinned snapshot
-├── rl_robotics_report.pdf           # report
+├── rl_robotics_report_TIANYUXIN.pdf           # report
 ├── configs/
 │   ├── part0_commands.txt              # Part 0 reproducible commands
 │   ├── part1_commands.txt              # Part 1 reproducible commands

@@ -132,6 +132,39 @@ python scripts/part2/play.py \
   --render-mode none \
   --output results/part2/final_eval/sparse_seed1300.json
 
+# Dense reward with arrival bonus (dense_n_rew, --success-bonus 3.0), same 3
+# seeds, 50-episode final eval -- used to pick the best dense_n_rew seed for
+# the rollout video below (seed 1: 86%, seed 12: 78%, seed 1300: 76%).
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --success-bonus 3.0 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_n_rew_seed1.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784455377/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --success-bonus 3.0 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_n_rew_seed12.json
+
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --success-bonus 3.0 \
+  --episodes 50 \
+  --seed 3000 \
+  --render-mode none \
+  --output results/part2/final_eval/dense_n_rew_seed1300.json
+
 # Sensor-noise sweep: best dense policy (seed 1, highest success rate of the
 # 3 dense seeds) re-evaluated at sigma in {0, 0.005, 0.02}, 50 deterministic
 # episodes each on the same held-out seed 3000. --noise-sigma overrides
@@ -179,11 +212,14 @@ python scripts/part2/plot_noise_sensitivity.py \
   --title "Dense PPO (seed 1) - sensitivity to observation noise" \
   --output results/part2/noise_sensitivity_dense_seed1.png
 
-# Rollout video of the best policy (dense, seed 1 -- the same checkpoint used
-# in the sensor-noise sweep above), 50 deterministic episodes recorded as MP4
-# -- same episode count as the evaluation protocol (Part 4.1), one clip per
-# episode (videos/part2/play-episode-{0..49}.mp4), plus per-episode/summary
-# stats saved as JSON.
+# Rollout videos: 50 deterministic episodes each (same episode count as the
+# evaluation protocol, Part 4.1), recorded per-episode then concatenated into
+# a single continuous MP4 for easy review; the per-episode clips are deleted
+# afterwards, only the concatenated file is kept (uses the ffmpeg binary
+# bundled with imageio-ffmpeg).
+
+# Original dense reward, best seed (seed 1, the checkpoint used in the
+# sensor-noise sweep above).
 python scripts/part2/play.py \
   --algo custom \
   --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__1__1784437680/best/train_custom_ppo.cleanrl_model \
@@ -195,13 +231,32 @@ python scripts/part2/play.py \
   --video-dir videos/part2 \
   --output results/part2/final_eval/dense_seed1_video_rollout.json
 
-# Concatenate the 50 per-episode clips into a single continuous video for
-# easy review (uses the ffmpeg binary bundled with imageio-ffmpeg).
 FFMPEG=$(python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe())")
 (cd videos/part2 && \
   for i in $(seq 0 49); do echo "file 'play-episode-${i}.mp4'"; done > concat_list.txt && \
   "$FFMPEG" -f concat -safe 0 -i concat_list.txt -c copy dense_seed1_rollout_50episodes.mp4 -y && \
-  rm concat_list.txt)
+  rm concat_list.txt play-episode-*.mp4)
+
+# New dense reward with arrival bonus (--success-bonus 3.0), best seed among
+# the 3 dense_n_rew seeds by final 50-episode success rate (seed 1: 86%,
+# seed 12: 78%, seed 1300: 76%; see the dense_n_rew_seed{1,12,1300}.json
+# final-eval commands above for how these were picked).
+python scripts/part2/play.py \
+  --algo custom \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/best/train_custom_ppo.cleanrl_model \
+  --reward-type dense \
+  --success-bonus 3.0 \
+  --noise-sigma 0.005 \
+  --episodes 50 \
+  --seed 40000 \
+  --render-mode video \
+  --video-dir videos/part2 \
+  --output results/part2/final_eval/dense_n_rew_seed1_video_rollout.json
+
+(cd videos/part2 && \
+  for i in $(seq 0 49); do echo "file 'play-episode-${i}.mp4'"; done > concat_list.txt && \
+  "$FFMPEG" -f concat -safe 0 -i concat_list.txt -c copy dense_n_rew_seed1_rollout_50episodes.mp4 -y && \
+  rm concat_list.txt play-episode-*.mp4)
 
 # ---------------------------------------------------------------------------
 # Plot learning curves
