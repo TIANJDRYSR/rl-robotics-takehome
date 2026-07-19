@@ -134,10 +134,24 @@ python scripts/part2/play.py \
 
 # Dense reward with arrival bonus (dense_n_rew, --success-bonus 3.0), same 3
 # seeds, 50-episode final eval -- used to pick the best dense_n_rew seed for
-# the rollout video below (seed 1: 86%, seed 12: 78%, seed 1300: 76%).
+# the rollout video below.
+#
+# IMPORTANT: uses the periodic checkpoint closest to the end of training
+# (step 901120 of 1,001,472), NOT best/train_custom_ppo.cleanrl_model.
+# train_custom_ppo.py's best-checkpoint logic (train_custom_ppo.py:360-362)
+# only overwrites best/ when a periodic 10-episode eval's success_rate is
+# STRICTLY greater than the previous best. Because dense_n_rew's success
+# rate saturates at a perfect 10/10 early in training (seed 1 at step
+# 251904, seed 12 at step 401408 -- see their evaluations.json), best/ gets
+# locked onto that early, undertrained checkpoint and never updates again,
+# even though mean_return keeps climbing for the next ~750K steps. A rigorous
+# 50-episode eval of best/ for seed 1 gave only 86% success; the same eval on
+# the step-901120 checkpoint below gives 96% -- confirming best/ was stale,
+# not that 50-episode evaluation is noisy. (Seed 1300 never saturated, so
+# its best/ already equals its step-901120 checkpoint -- 76% either way.)
 python scripts/part2/play.py \
   --algo custom \
-  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/best/train_custom_ppo.cleanrl_model \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/periodic/train_custom_ppo_901120_steps.cleanrl_model \
   --reward-type dense \
   --success-bonus 3.0 \
   --episodes 50 \
@@ -147,7 +161,7 @@ python scripts/part2/play.py \
 
 python scripts/part2/play.py \
   --algo custom \
-  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784455377/best/train_custom_ppo.cleanrl_model \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__12__1784455377/periodic/train_custom_ppo_901120_steps.cleanrl_model \
   --reward-type dense \
   --success-bonus 3.0 \
   --episodes 50 \
@@ -157,7 +171,7 @@ python scripts/part2/play.py \
 
 python scripts/part2/play.py \
   --algo custom \
-  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/best/train_custom_ppo.cleanrl_model \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/periodic/train_custom_ppo_901120_steps.cleanrl_model \
   --reward-type dense \
   --success-bonus 3.0 \
   --episodes 50 \
@@ -238,12 +252,13 @@ FFMPEG=$(python -c "import imageio_ffmpeg; print(imageio_ffmpeg.get_ffmpeg_exe()
   rm concat_list.txt play-episode-*.mp4)
 
 # New dense reward with arrival bonus (--success-bonus 3.0), best seed among
-# the 3 dense_n_rew seeds by final 50-episode success rate (seed 1: 86%,
-# seed 12: 78%, seed 1300: 76%; see the dense_n_rew_seed{1,12,1300}.json
-# final-eval commands above for how these were picked).
+# the 3 dense_n_rew seeds by final 50-episode success rate (seed 1: 96%,
+# seed 12: 96%, seed 1300: 76%; see the dense_n_rew_seed{1,12,1300}.json
+# final-eval commands above -- and their step-901120-vs-best/ note -- for
+# how these were picked). Seed 1 used for tiebreak (higher mean_return).
 python scripts/part2/play.py \
   --algo custom \
-  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/best/train_custom_ppo.cleanrl_model \
+  --model-path checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1__1784454216/periodic/train_custom_ppo_901120_steps.cleanrl_model \
   --reward-type dense \
   --success-bonus 3.0 \
   --noise-sigma 0.005 \

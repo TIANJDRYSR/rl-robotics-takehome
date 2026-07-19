@@ -1,6 +1,6 @@
 {
   "algo": "custom",
-  "model_path": "checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/best/train_custom_ppo.cleanrl_model",
+  "model_path": "checkpoints/custom/NoisyGoalReacher-v0__train_custom_ppo__dense__1300__1784456718/periodic/train_custom_ppo_901120_steps.cleanrl_model",
   "env_id": "NoisyGoalReacher-v0",
   "env_kwargs": {
     "goal_radius_min": 0.05,
