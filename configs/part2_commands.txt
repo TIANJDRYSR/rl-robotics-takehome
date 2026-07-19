@@ -1,4 +1,15 @@
 # Part 2: Custom PPO (CleanRL-style) vs. Stable-Baselines3 PPO on NoisyGoalReacher-v0
+# ============================================================
+# Part 2/3 commands — NoisyGoalReacher-v0
+# ------------------------------------------------------------
+#  1. Setup
+#  2. Train (SB3 baseline + custom PPO: dense/sparse/success-bonus, 3 seeds)
+#  3. Final 50-episode evaluation (dense/sparse, 6 runs)
+#  4. dense_n_rew evaluation (+ best-checkpoint note)
+#  5. Sensor-noise sweep
+#  6. Rollout videos
+#  7. Learning-curve & comparison plots
+# ============================================================
 
 conda env create -f environment.yml
 conda activate rl-robotics-takehome
